@@ -69,9 +69,9 @@ typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
 /* File event structure */
 typedef struct aeFileEvent {
-    int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
-    aeFileProc *rfileProc;
-    aeFileProc *wfileProc;
+    int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */ // 框架在分发事件时，依赖的就是结构体中的事件类型；
+    aeFileProc *rfileProc; // handler 指向AE_READABLE的处理函数
+    aeFileProc *wfileProc; // handler 指向AE_WRITABLE的处理函数
     void *clientData;
 } aeFileEvent;
 
@@ -99,9 +99,9 @@ typedef struct aeEventLoop {
     int setsize; /* max number of file descriptors tracked */
     long long timeEventNextId;
     time_t lastTime;     /* Used to detect system clock skew */
-    aeFileEvent *events; /* Registered events */
-    aeFiredEvent *fired; /* Fired events */
-    aeTimeEvent *timeEventHead;
+    aeFileEvent *events; /* Registered events 表示 IO 事件。之所以类型名称为 aeFileEvent，是因为所有的 IO 事件都会用文件描述符进行标识*/
+    aeFiredEvent *fired; /* Fired events 这个并不是一类专门的事件类型，它只是用来记录已触发事件对应的文件描述符信息。 */
+    aeTimeEvent *timeEventHead; // 表示时间事件，即按一定时间周期触发的事件 
     int stop;
     void *apidata; /* This is used for polling API specific data */
     aeBeforeSleepProc *beforesleep;
