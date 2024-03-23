@@ -614,12 +614,13 @@ typedef struct RedisModuleDigest {
 
 #define OBJ_SHARED_REFCOUNT INT_MAX
 typedef struct redisObject {
-    unsigned type:4;
-    unsigned encoding:4;
-    unsigned lru:LRU_BITS; /* LRU time (relative to global lru_clock) or
+    unsigned type:4; //redisObject的数据类型，4个bits
+    unsigned encoding:4; //redisObject的数据类型，4个bits
+    unsigned lru:LRU_BITS; /* LRU time (relative to global lru_clock) or 
                             * LFU data (least significant 8 bits frequency
                             * and most significant 16 bits access time). */
-    int refcount;
+                           // 该字段一个3byte
+    int refcount; //redisObject的引用计数，4个字节
     void *ptr;
 } robj;
 
@@ -811,8 +812,8 @@ struct sharedObjectsStruct {
 /* ZSETs use a specialized version of Skiplists */
 typedef struct zskiplistNode {
     sds ele;
-    double score;
-    struct zskiplistNode *backward;
+    double score; // 元素值权重
+    struct zskiplistNode *backward; // 后向指针，便于从尾到头的倒序查找
     struct zskiplistLevel {
         struct zskiplistNode *forward;
         unsigned long span;

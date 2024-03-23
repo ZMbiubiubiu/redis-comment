@@ -1378,6 +1378,7 @@ int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore) {
 
     /* Note that the above block handling ziplist would have either returned or
      * converted the key to skiplist. */
+    // 如果采用skiplist编码方式时，zsetAdd函数的处理逻辑
     if (zobj->encoding == OBJ_ENCODING_SKIPLIST) {
         zset *zs = zobj->ptr;
         zskiplistNode *znode;
@@ -1390,6 +1391,7 @@ int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore) {
                 *flags |= ZADD_NOP;
                 return 1;
             }
+            // 从哈希表中查询元素的权重
             curscore = *(double*)dictGetVal(de);
 
             /* Prepare the score for the increment if needed. */
@@ -1403,6 +1405,7 @@ int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore) {
             }
 
             /* Remove and re-insert when score changes. */
+            // 如果权重发生变化了
             if (score != curscore) {
                 znode = zslUpdateScore(zs->zsl,curscore,ele,score);
                 /* Note that we did not removed the original element from
