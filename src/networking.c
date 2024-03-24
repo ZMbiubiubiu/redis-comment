@@ -1458,16 +1458,16 @@ void processInputBuffer(client *c) {
         /* Determine request type when unknown. */
         if (!c->reqtype) {
             if (c->querybuf[c->qb_pos] == '*') {
-                c->reqtype = PROTO_REQ_MULTIBULK;
+                c->reqtype = PROTO_REQ_MULTIBULK;// 符合RESP协议的命令
             } else {
-                c->reqtype = PROTO_REQ_INLINE;
+                c->reqtype = PROTO_REQ_INLINE;//管道类型命令
             }
         }
 
         if (c->reqtype == PROTO_REQ_INLINE) {
             if (processInlineBuffer(c) != C_OK) break;
-        } else if (c->reqtype == PROTO_REQ_MULTIBULK) {
-            if (processMultibulkBuffer(c) != C_OK) break;
+        } else if (c->reqtype == PROTO_REQ_MULTIBULK) { 
+            if (processMultibulkBuffer(c) != C_OK) break; // 符合RESP协议，进行解析命令
         } else {
             serverPanic("Unknown request type");
         }
@@ -1477,6 +1477,7 @@ void processInputBuffer(client *c) {
             resetClient(c);
         } else {
             /* Only reset the client when the command was executed. */
+            //调用processCommand函数，开始执行命令
             if (processCommand(c) == C_OK) {
                 if (c->flags & CLIENT_MASTER && !(c->flags & CLIENT_MULTI)) {
                     /* Update the applied replication offset of our master. */
@@ -1518,6 +1519,7 @@ void processInputBufferAndReplicate(client *c) {
         processInputBuffer(c);
         size_t applied = c->reploff - prev_offset;
         if (applied) {
+            // 同步命令
             replicationFeedSlavesFromMasterStream(server.slaves,
                     c->pending_querybuf, applied);
             sdsrange(c->pending_querybuf,applied,-1);
@@ -1551,7 +1553,9 @@ void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {
 
     qblen = sdslen(c->querybuf);
     if (c->querybuf_peak < qblen) c->querybuf_peak = qblen;
+    //给缓冲区分配空间
     c->querybuf = sdsMakeRoomFor(c->querybuf, readlen);
+    //调用read从描述符为fd的客户端socket中读取数据
     nread = read(fd, c->querybuf+qblen, readlen);
     if (nread == -1) {
         if (errno == EAGAIN) {
@@ -1594,6 +1598,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {
      * was actually applied to the master state: this quantity, and its
      * corresponding part of the replication stream, will be propagated to
      * the sub-slaves and to the replication backlog. */
+    //调用processInputBufferAndReplicate进一步处理读取内容
     processInputBufferAndReplicate(c);
 }
 

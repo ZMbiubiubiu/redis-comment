@@ -2783,14 +2783,15 @@ int processCommand(client *c) {
     }
 
     /* Exec the command */
+    //如果客户端有CLIENT_MULTI标记，并且当前不是exec、discard、multi和watch命令
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand)
     {
-        queueMultiCommand(c);
+        queueMultiCommand(c);//将命令入队保存，等待后续一起处理
         addReply(c,shared.queued);
     } else {
-        call(c,CMD_CALL_FULL);
+        call(c,CMD_CALL_FULL);//调用call函数执行命令
         c->woff = server.master_repl_offset;
         if (listLength(server.ready_keys))
             handleClientsBlockedOnKeys();
