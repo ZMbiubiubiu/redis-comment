@@ -61,10 +61,14 @@
 #include "server.h"
 #include "bio.h"
 
+//保存线程描述符的数组
 static pthread_t bio_threads[BIO_NUM_OPS];
+// 互斥锁
 static pthread_mutex_t bio_mutex[BIO_NUM_OPS];
+// 条件变量
 static pthread_cond_t bio_newjob_cond[BIO_NUM_OPS];
 static pthread_cond_t bio_step_cond[BIO_NUM_OPS];
+// 每个后台线程创建一个要处理的任务列表
 static list *bio_jobs[BIO_NUM_OPS];
 /* The following array is used to hold the number of pending jobs for every
  * OP type. This allows us to export the bioPendingJobsOfType() API that is
@@ -72,6 +76,7 @@ static list *bio_jobs[BIO_NUM_OPS];
  * objects shared with the background thread. The main thread will just wait
  * that there are no longer jobs of this type to be executed before performing
  * the sensible operation. This data is also useful for reporting. */
+// 每个后台线程创建一个要处理的任务列表
 static unsigned long long bio_pending[BIO_NUM_OPS];
 
 /* This structure represents a background Job. It is only used locally to this
@@ -111,7 +116,7 @@ void bioInit(void) {
     /* Set the stack size as by default it may be small in some system */
     pthread_attr_init(&attr);
     pthread_attr_getstacksize(&attr,&stacksize);
-    if (!stacksize) stacksize = 1; /* The world is full of Solaris Fixes */
+    if (!stacksize) stacksize = 1; /* The world is full of Solaris Fixes hh,作者的吐槽,针对Solaris系统做处理*/
     while (stacksize < REDIS_THREAD_STACK_SIZE) stacksize *= 2;
     pthread_attr_setstacksize(&attr, stacksize);
 
@@ -131,13 +136,13 @@ void bioInit(void) {
 void bioCreateBackgroundJob(int type, void *arg1, void *arg2, void *arg3) {
     struct bio_job *job = zmalloc(sizeof(*job));
 
-    job->time = time(NULL);
+    job->time = time(NULL); // 时间设置为当前时间
     job->arg1 = arg1;
     job->arg2 = arg2;
     job->arg3 = arg3;
-    pthread_mutex_lock(&bio_mutex[type]);
+    pthread_mutex_lock(&bio_mutex[type]); // 加入到任务列表之前，先加锁
     listAddNodeTail(bio_jobs[type],job);
-    bio_pending[type]++;
+    bio_pending[type]++;//将对应任务列表上等待处理的任务个数加1
     pthread_cond_signal(&bio_newjob_cond[type]);
     pthread_mutex_unlock(&bio_mutex[type]);
 }

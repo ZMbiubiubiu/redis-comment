@@ -3916,12 +3916,14 @@ void createPidFile(void) {
 void daemonize(void) {
     int fd;
 
+    //fork成功执行或失败，则父进程退出
     if (fork() != 0) exit(0); /* parent exits */
     setsid(); /* create a new session */
 
     /* Every output goes to /dev/null. If Redis is daemonized but
      * the 'logfile' is set to 'stdout' in the configuration file
      * it will not log at all. */
+    //将子进程的标准输入、标准输出、标准错误输出重定向到/dev/null中
     if ((fd = open("/dev/null", O_RDWR, 0)) != -1) {
         dup2(fd, STDIN_FILENO);
         dup2(fd, STDOUT_FILENO);
@@ -4416,7 +4418,7 @@ int main(int argc, char **argv) {
     #endif /* __arm64__ */
     #endif /* __linux__ */
         moduleLoadFromQueue();
-        InitServerLast();
+        InitServerLast(); // 里面其实就已经开启了额外的三个线程，从这时起，redis就不是单线程啦
         loadDataFromDisk();
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {
@@ -4431,7 +4433,7 @@ int main(int argc, char **argv) {
         if (server.sofd > 0)
             serverLog(LL_NOTICE,"The server is now ready to accept connections at %s", server.unixsocket);
     } else {
-        InitServerLast();
+        InitServerLast(); // 同上
         sentinelIsRunning();
     }
 
