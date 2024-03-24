@@ -78,12 +78,12 @@ typedef struct aeFileEvent {
 /* Time event structure */
 typedef struct aeTimeEvent {
     long long id; /* time event identifier. */
-    long when_sec; /* seconds */
-    long when_ms; /* milliseconds */
-    aeTimeProc *timeProc;
-    aeEventFinalizerProc *finalizerProc;
+    long when_sec; /* seconds 事件到达的秒级时间戳*/
+    long when_ms; /* milliseconds 事件到达的毫秒级时间戳*/
+    aeTimeProc *timeProc;//时间事件触发后的处理函数
+    aeEventFinalizerProc *finalizerProc;//事件结束后的处理函数
     void *clientData;
-    struct aeTimeEvent *prev;
+    struct aeTimeEvent *prev;//事件结束后的处理函数
     struct aeTimeEvent *next;
 } aeTimeEvent;
 

@@ -293,6 +293,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
     }
     eventLoop->lastTime = now;
 
+    //从时间事件链表中取出事件
     te = eventLoop->timeEventHead;
     maxId = eventLoop->timeEventNextId-1;
     while(te) {
@@ -324,6 +325,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
             te = te->next;
             continue;
         }
+        //获取当前时间
         aeGetTime(&now_sec, &now_ms);
         if (now_sec > te->when_sec ||
             (now_sec == te->when_sec && now_ms >= te->when_ms))
@@ -470,7 +472,6 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         }
     }
     /* Check time events */
-    // /*如果有IO事件发生，或者紧急的时间事件发生，则开始处理*/
     if (flags & AE_TIME_EVENTS)
         processed += processTimeEvents(eventLoop);
 
