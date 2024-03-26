@@ -103,7 +103,7 @@ typedef struct aeEventLoop {
     aeFiredEvent *fired; /* Fired events 这个并不是一类专门的事件类型，它只是用来记录已触发事件对应的文件描述符信息。 */
     aeTimeEvent *timeEventHead; // 表示时间事件，即按一定时间周期触发的事件 
     int stop;
-    void *apidata; /* This is used for polling API specific data */
+    void *apidata; /* This is used for polling API specific data，比如存储epoll fd*/
     aeBeforeSleepProc *beforesleep;
     aeBeforeSleepProc *aftersleep;
 } aeEventLoop;

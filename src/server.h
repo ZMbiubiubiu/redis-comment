@@ -609,7 +609,7 @@ typedef struct RedisModuleDigest {
 #define OBJ_ENCODING_STREAM 10 /* Encoded as a radix tree of listpacks */
 
 #define LRU_BITS 24
-#define LRU_CLOCK_MAX ((1<<LRU_BITS)-1) /* Max value of obj->lru */
+#define LRU_CLOCK_MAX ((1<<LRU_BITS)-1) /* Max value of obj->lru LRU时钟的最大值*/
 #define LRU_CLOCK_RESOLUTION 1000 /* LRU clock resolution in ms */
 
 #define OBJ_SHARED_REFCOUNT INT_MAX
@@ -620,6 +620,7 @@ typedef struct redisObject {
                             * LFU data (least significant 8 bits frequency
                             * and most significant 16 bits access time). */
                            // 该字段一个3byte
+                           // redis有一个全局时钟值，由此设定lru字段的值
     int refcount; //redisObject的引用计数，4个字节
     void *ptr;
 } robj;

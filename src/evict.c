@@ -163,6 +163,7 @@ void evictionPoolPopulate(int dbid, dict *sampledict, dict *keydict, struct evic
     int j, k, count;
     dictEntry *samples[server.maxmemory_samples];
 
+    //将待采样的哈希表sampledict、采样后的集合samples、以及采样数量maxmemory_samples，作为参数传给dictGetSomeKeys
     count = dictGetSomeKeys(sampledict,samples,server.maxmemory_samples);
     for (j = 0; j < count; j++) {
         unsigned long long idle;
@@ -407,6 +408,7 @@ int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *lev
 
     /* Remove the size of slaves output buffers and AOF buffer from the
      * count of used memory. */
+    // 如果当前内存使用量没有超过 maxmemory，那么，getMaxmemoryState 函数会返回 C_OK
     mem_used = mem_reported;
     size_t overhead = freeMemoryGetNotCountedMemory();
     mem_used = (mem_used > overhead) ? mem_used-overhead : 0;
@@ -457,6 +459,7 @@ int freeMemoryIfNeeded(void) {
      * POV of clients not being able to write, but also from the POV of
      * expires and evictions of keys not being performed. */
     if (clientsArePaused()) return C_OK;
+    // 如果当前内存使用量没有超过 maxmemory，那么，getMaxmemoryState 函数会返回 C_OK
     if (getMaxmemoryState(&mem_reported,NULL,&mem_tofree,NULL) == C_OK)
         return C_OK;
 
@@ -488,6 +491,7 @@ int freeMemoryIfNeeded(void) {
                  * every DB. */
                 for (i = 0; i < server.dbnum; i++) {
                     db = server.db+i;
+                    // 根据淘汰策略，决定使用全局哈希表还是设置了过期时间的key的哈希表
                     dict = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ?
                             db->dict : db->expires;
                     if ((keys = dictSize(dict)) != 0) {
@@ -538,6 +542,7 @@ int freeMemoryIfNeeded(void) {
             for (i = 0; i < server.dbnum; i++) {
                 j = (++next_db) % server.dbnum;
                 db = server.db+j;
+                // 根据淘汰策略，决定使用全局哈希表还是设置了过期时间的key的哈希表
                 dict = (server.maxmemory_policy == MAXMEMORY_ALLKEYS_RANDOM) ?
                         db->dict : db->expires;
                 if (dictSize(dict) != 0) {

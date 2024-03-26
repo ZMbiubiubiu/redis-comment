@@ -1155,6 +1155,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
      *
      * Note that you can change the resolution altering the
      * LRU_CLOCK_RESOLUTION define. */
+    // 默认情况下，每100毫秒调用getLRUClock函数更新一次全局LRU时钟值
     unsigned long lruclock = getLRUClock();
     atomicSet(server.lruclock,lruclock);
 
