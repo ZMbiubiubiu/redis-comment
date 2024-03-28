@@ -83,6 +83,7 @@ robj *createRawStringObject(const char *ptr, size_t len) {
  * an object where the sds string is actually an unmodifiable string
  * allocated in the same chunk as the object itself. */
 robj * createEmbeddedStringObject(const char *ptr, size_t len) {
+    // redisObject结构体大小+sds header头大小+字节数组大小+结束符'\0'
     robj *o = zmalloc(sizeof(robj)+sizeof(struct sdshdr8)+len+1);
     struct sdshdr8 *sh = (void*)(o+1);
 
