@@ -502,6 +502,7 @@ void dictObjectDestructor(void *privdata, void *val)
     decrRefCount(val);
 }
 
+// 全局hash表的key的释放函数
 void dictSdsDestructor(void *privdata, void *val)
 {
     DICT_NOTUSED(privdata);
