@@ -567,8 +567,10 @@ int freeMemoryIfNeeded(void) {
              *
              * AOF and Output buffer memory will be freed eventually so
              * we only care about memory used by the key space. */
+            //获取当前内存使用量
             delta = (long long) zmalloc_used_memory();
             latencyStartMonitor(eviction_latency);
+            //如果启用了惰性删除，则进行异步删除
             if (server.lazyfree_lazy_eviction)
                 dbAsyncDelete(db,keyobj);
             else
@@ -576,7 +578,9 @@ int freeMemoryIfNeeded(void) {
             latencyEndMonitor(eviction_latency);
             latencyAddSampleIfNeeded("eviction-del",eviction_latency);
             latencyRemoveNestedEvent(latency,eviction_latency);
+            //根据当前内存使用量计算数据删除前后释放的内存量
             delta -= (long long) zmalloc_used_memory();
+            //更新已释放的内存量
             mem_freed += delta;
             server.stat_evictedkeys++;
             notifyKeyspaceEvent(NOTIFY_EVICTED, "evicted",

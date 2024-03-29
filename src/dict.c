@@ -380,12 +380,15 @@ static dictEntry *dictGenericDelete(dict *d, const void *key, int nofree) {
         he = d->ht[table].table[idx];
         prevHe = NULL;
         while(he) {
+            //如果找见被删除key了，那么将它从哈希桶的链表中去除
             if (key==he->key || dictCompareKeys(d, key, he->key)) {
                 /* Unlink the element from the list */
+                // 这里只是将键值对从bucket的链表中删除
                 if (prevHe)
                     prevHe->next = he->next;
                 else
                     d->ht[table].table[idx] = he->next;
+                // 如果不需要异步删除，直接释放内存
                 if (!nofree) {
                     dictFreeKey(d, he);
                     dictFreeVal(d, he);
