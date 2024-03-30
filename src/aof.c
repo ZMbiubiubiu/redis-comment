@@ -102,6 +102,7 @@ void aofChildWriteDiffData(aeEventLoop *el, int fd, void *privdata, int mask) {
     UNUSED(mask);
 
     while(1) {
+        //从aof_rewrite_buf_blocks列表中取出数据块
         ln = listFirst(server.aof_rewrite_buf_blocks);
         block = ln ? ln->value : NULL;
         if (server.aof_stop_sending_diff || !block) {
@@ -110,6 +111,7 @@ void aofChildWriteDiffData(aeEventLoop *el, int fd, void *privdata, int mask) {
             return;
         }
         if (block->used > 0) {
+            //调用write将数据块写入主进程和重写子进程间的管道
             nwritten = write(server.aof_pipe_write_data_to_child,
                              block->buf,block->used);
             if (nwritten <= 0) return;
@@ -162,6 +164,7 @@ void aofRewriteBufferAppend(unsigned char *s, unsigned long len) {
 
     /* Install a file event to send data to the rewrite child if there is
      * not one already. */
+    //检查aof_pipe_write_data_to_child描述符上是否有事件
     if (aeGetFileEvents(server.el,server.aof_pipe_write_data_to_child) == 0) {
         aeCreateFileEvent(server.el, server.aof_pipe_write_data_to_child,
             AE_WRITABLE, aofChildWriteDiffData, NULL);
@@ -577,6 +580,7 @@ sds catAppendOnlyExpireAtCommand(sds buf, struct redisCommand *cmd, robj *key, r
     return buf;
 }
 
+// 记录aof日志
 void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int argc) {
     sds buf = sdsempty();
     robj *tmpargv[3];
@@ -637,6 +641,7 @@ void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int a
      * accumulate the differences between the child DB and the current one
      * in a buffer, so that when the child process will do its work we
      * can append the differences to the new append only file. */
+    // 如果此时有aof重写子进程，将新命令写入到aof日志重写缓冲区
     if (server.aof_child_pid != -1)
         aofRewriteBufferAppend((unsigned char*)buf,sdslen(buf));
 
@@ -1451,6 +1456,7 @@ int rewriteAppendOnlyFile(char *filename) {
     serverLog(LL_NOTICE,
         "Concatenating %.2f MB of AOF diff received from parent.",
         (double) sdslen(server.aof_child_diff) / (1024*1024));
+    //将aof_child_diff中累积的操作命令写入AOF重写日志文件
     if (rioWrite(&aof,server.aof_child_diff,sdslen(server.aof_child_diff)) == 0)
         goto werr;
 
@@ -1512,6 +1518,7 @@ void aofChildPipeReadable(aeEventLoop *el, int fd, void *privdata, int mask) {
  * the rewrite so no more data should be written, and another for the
  * parent to acknowledge it understood this new condition. */
 int aofCreatePipes(void) {
+    // 每一个管道会对应两个文件描述符
     int fds[6] = {-1, -1, -1, -1, -1, -1};
     int j;
 
@@ -1521,8 +1528,10 @@ int aofCreatePipes(void) {
     /* Parent -> children data is non blocking. */
     if (anetNonBlock(NULL,fds[0]) != ANET_OK) goto error;
     if (anetNonBlock(NULL,fds[1]) != ANET_OK) goto error;
+    // 注册读事件的监听
     if (aeCreateFileEvent(server.el, fds[2], AE_READABLE, aofChildPipeReadable, NULL) == AE_ERR) goto error;
 
+    // 将管道描述符赋值给server全局变量
     server.aof_pipe_write_data_to_child = fds[1];
     server.aof_pipe_read_data_from_parent = fds[0];
     server.aof_pipe_write_ack_to_parent = fds[3];
@@ -1571,9 +1580,11 @@ int rewriteAppendOnlyFileBackground(void) {
     long long start;
 
     if (server.aof_child_pid != -1 || server.rdb_child_pid != -1) return C_ERR;
+    // 创建管道
     if (aofCreatePipes() != C_OK) return C_ERR;
     openChildInfoPipe();
     start = ustime();
+    // 在子进程中进行aof重写
     if ((childpid = fork()) == 0) {
         char tmpfile[256];
 
@@ -1611,10 +1622,10 @@ int rewriteAppendOnlyFileBackground(void) {
         }
         serverLog(LL_NOTICE,
             "Background append only file rewriting started by pid %d",childpid);
-        server.aof_rewrite_scheduled = 0;
+        server.aof_rewrite_scheduled = 0; // 取消调度，表示正在进行aof重写
         server.aof_rewrite_time_start = time(NULL);
-        server.aof_child_pid = childpid;
-        updateDictResizePolicy();
+        server.aof_child_pid = childpid; // 记录aof重写子进程的进程号
+        updateDictResizePolicy(); // 关闭dict rehash的功能
         /* We set appendseldb to -1 in order to force the next call to the
          * feedAppendOnlyFile() to issue a SELECT command, so the differences
          * accumulated by the parent into server.aof_rewrite_buf will start

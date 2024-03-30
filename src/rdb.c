@@ -1390,7 +1390,7 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
         server.rdb_save_time_start = time(NULL);
         server.rdb_child_pid = childpid;
         server.rdb_child_type = RDB_CHILD_TYPE_DISK;
-        updateDictResizePolicy();
+        updateDictResizePolicy(); // 关闭dict 的rehash
         return C_OK;
     }
     return C_OK; /* unreached */
