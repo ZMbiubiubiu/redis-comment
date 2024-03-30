@@ -1344,6 +1344,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
     /* Replication cron function -- used to reconnect to master,
      * detect transfer failures, start background RDB transfers and so forth. */
+    // 每1000ms执行一次
     run_with_period(1000) replicationCron();
 
     /* Run the Redis Cluster cron. */
@@ -2165,7 +2166,7 @@ void initServer(void) {
     /* Create the timer callback, this is our way to process many background
      * operations incrementally, like clients timeout, eviction of unaccessed
      * expired keys and so forth. */
-    //开始监听设置的网络端口
+    //为server后台任务创建定时事件
     if (aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL) == AE_ERR) {
         serverPanic("Can't create event loop timers.");
         exit(1);
@@ -4286,6 +4287,7 @@ int main(int argc, char **argv) {
     getRandomHexChars(hashseed,sizeof(hashseed));
     dictSetHashFunctionSeed((uint8_t*)hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
+    // 为server设置默认值
     initServerConfig();
     moduleInitModulesSystem();
 
@@ -4305,7 +4307,7 @@ int main(int argc, char **argv) {
     }
 
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
-     * the program main. However the program is part of the Redis executable
+     * the program main. However, the program is part of the Redis executable
      * so that we can easily execute an RDB check on loading errors. */
     if (strstr(argv[0],"redis-check-rdb") != NULL)
         redis_check_rdb_main(argc,argv,NULL);
@@ -4374,6 +4376,7 @@ int main(int argc, char **argv) {
             exit(1);
         }
         resetServerSaveParams();
+        // 设置server的配置
         loadServerConfig(configfile,options);
         sdsfree(options);
     }
@@ -4427,7 +4430,7 @@ int main(int argc, char **argv) {
     #endif /* __linux__ */
         moduleLoadFromQueue();
         InitServerLast(); // 里面其实就已经开启了额外的三个线程，从这时起，redis就不是单线程啦
-        loadDataFromDisk();
+        loadDataFromDisk(); // 从磁盘上加载 AOF 或者是 RDB 文件，以便恢复之前的数据
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {
                 serverLog(LL_WARNING,

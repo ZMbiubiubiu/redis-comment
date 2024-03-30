@@ -1921,6 +1921,7 @@ write_error: /* Handle sendSynchronousCommand(SYNC_CMD_WRITE) errors. */
 int connectWithMaster(void) {
     int fd;
 
+    //从库和主库建立连接
     fd = anetTcpNonBlockBestEffortBindConnect(NULL,
         server.masterhost,server.masterport,NET_FIRST_BIND_ADDR);
     if (fd == -1) {
@@ -1929,6 +1930,7 @@ int connectWithMaster(void) {
         return C_ERR;
     }
 
+    //在建立的连接上注册读写事件，对应的回调函数是syncWithMaster
     if (aeCreateFileEvent(server.el,fd,AE_READABLE|AE_WRITABLE,syncWithMaster,NULL) ==
             AE_ERR)
     {
@@ -1939,6 +1941,7 @@ int connectWithMaster(void) {
 
     server.repl_transfer_lastio = server.unixtime;
     server.repl_transfer_s = fd;
+    //完成连接后，将状态机设置为REPL_STATE_CONNECTING
     server.repl_state = REPL_STATE_CONNECTING;
     return C_OK;
 }
@@ -2011,7 +2014,7 @@ void replicationSetMaster(char *ip, int port) {
         replicationDiscardCachedMaster();
         replicationCacheMasterUsingMyself();
     }
-    server.repl_state = REPL_STATE_CONNECT;
+    server.repl_state = REPL_STATE_CONNECT; // 更新从库复制的状态机
 }
 
 /* Cancel replication, setting the instance as a master itself. */
@@ -2101,6 +2104,7 @@ void replicaofCommand(client *c) {
         }
         /* There was no previous master or the user specified a different one,
          * we can continue. */
+        /* 如果没有记录主库的IP和端口号，设置主库的信息 */
         replicationSetMaster(c->argv[1]->ptr, port);
         sds client = catClientInfoString(sdsempty(),c);
         serverLog(LL_NOTICE,"REPLICAOF %s:%d enabled (user request from '%s')",
@@ -2605,6 +2609,7 @@ void replicationCron(void) {
     }
 
     /* Check if we should connect to a MASTER */
+    // 与主库进行联系
     if (server.repl_state == REPL_STATE_CONNECT) {
         serverLog(LL_NOTICE,"Connecting to MASTER %s:%d",
             server.masterhost, server.masterport);
