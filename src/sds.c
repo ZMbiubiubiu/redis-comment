@@ -40,7 +40,7 @@
 #include "sdsalloc.h"
 
 const char *SDS_NOINIT = "SDS_NOINIT";
-
+// hdr是header的意思
 static inline int sdsHdrSize(char type) {
     switch(type&SDS_TYPE_MASK) {
         case SDS_TYPE_5:
@@ -97,7 +97,7 @@ sds sdsnewlen(const void *init, size_t initlen) {
     unsigned char *fp; /* flags pointer. */
 
     assert(hdrlen+initlen+1 > initlen); /* Catch size_t overflow */
-    //新建SDS结构，并分配内存空间
+    //新建SDS结构，并分配内存空间，最后的+1指的是字符串结尾的'\0'
     sh = s_malloc(hdrlen+initlen+1);
     if (init==SDS_NOINIT)
         init = NULL;

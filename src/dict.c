@@ -216,6 +216,7 @@ int dictRehash(dict *d, int n) {
             d->ht[1].used++;
             de = nextde;
         }
+        // 完成一个bucket的搬运
         d->ht[0].table[d->rehashidx] = NULL;
         d->rehashidx++;
     }
