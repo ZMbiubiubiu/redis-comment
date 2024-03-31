@@ -415,6 +415,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 
         /* Call the multiplexing API, will return only on timeout or when
          * some event fires. */
+        //调用aeApiPoll函数捕获事件,包装了epoll_wait
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* After sleep callback. */
@@ -472,6 +473,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         }
     }
     /* Check time events */
+    /* 检查是否有时间事件，若有，则调用processTimeEvents函数处理 */
     if (flags & AE_TIME_EVENTS)
         processed += processTimeEvents(eventLoop);
 

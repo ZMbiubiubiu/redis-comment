@@ -1486,12 +1486,14 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
     sds reply;
 
     /* Writing half */
+    //发送PSYNC命令
     if (!read_reply) {
         /* Initially set master_initial_offset to -1 to mark the current
          * master run_id and offset as not valid. Later if we'll be able to do
          * a FULL resync using the PSYNC command we'll set the offset at the
          * right value, so that this information will be propagated to the
          * client structure representing the master into server.master. */
+        //从库第一次和主库同步时，设置offset为-1
         server.master_initial_offset = -1;
 
         if (server.cached_master) {
@@ -1505,6 +1507,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
         }
 
         /* Issue the PSYNC command */
+        //调用sendSynchronousCommand发送PSYNC命令
         reply = sendSynchronousCommand(SYNC_CMD_WRITE,fd,"PSYNC",psync_replid,psync_offset,NULL);
         if (reply != NULL) {
             serverLog(LL_WARNING,"Unable to send PSYNC to master: %s",reply);
@@ -1512,10 +1515,12 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
             aeDeleteFileEvent(server.el,fd,AE_READABLE);
             return PSYNC_WRITE_ERROR;
         }
+        //发送命令后，等待主库响应
         return PSYNC_WAIT_REPLY;
     }
 
     /* Reading half */
+    //读取主库的响应
     reply = sendSynchronousCommand(SYNC_CMD_READ,fd,NULL);
     if (sdslen(reply) == 0) {
         /* The master may send empty newlines after it receives PSYNC
@@ -1526,6 +1531,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
 
     aeDeleteFileEvent(server.el,fd,AE_READABLE);
 
+    //主库返回FULLRESYNC，全量复制
     if (!strncmp(reply,"+FULLRESYNC",11)) {
         char *replid = NULL, *offset = NULL;
 
@@ -1559,6 +1565,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
         return PSYNC_FULLRESYNC;
     }
 
+    //主库返回CONTINUE，执行增量复制
     if (!strncmp(reply,"+CONTINUE",9)) {
         /* Partial resync was accepted. */
         serverLog(LL_NOTICE,
@@ -1837,6 +1844,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
     }
 
     psync_result = slaveTryPartialResynchronization(fd,1);
+    //PSYNC结果还没有返回，先从syncWithMaster函数返回处理其他操作
     if (psync_result == PSYNC_WAIT_REPLY) return; /* Try again later... */
 
     /* If the master is in an transient error, we should try to PSYNC
@@ -1847,7 +1855,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
 
     /* Note: if PSYNC does not return WAIT_REPLY, it will take care of
      * uninstalling the read handler from the file descriptor. */
-
+    //如果PSYNC结果是PSYNC_CONTINUE，从syncWithMaster函数返回，后续执行增量复制
     if (psync_result == PSYNC_CONTINUE) {
         serverLog(LL_NOTICE, "MASTER <-> REPLICA sync: Master accepted a Partial Resynchronization.");
         return;
@@ -1886,6 +1894,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
     }
 
     /* Setup the non blocking download of the bulk file. */
+    //如果执行全量复制的话，针对连接上的读事件，创建readSyncBulkPayload回调函数
     if (aeCreateFileEvent(server.el,fd, AE_READABLE,readSyncBulkPayload,NULL)
             == AE_ERR)
     {
@@ -1895,6 +1904,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
         goto error;
     }
 
+    //将从库状态机置为REPL_STATE_TRANSFER
     server.repl_state = REPL_STATE_TRANSFER;
     server.repl_transfer_size = -1;
     server.repl_transfer_read = 0;

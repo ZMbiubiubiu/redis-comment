@@ -76,6 +76,7 @@ typedef struct aeFileEvent {
 } aeFileEvent;
 
 /* Time event structure */
+//Redis 自身的周期性操作
 typedef struct aeTimeEvent {
     long long id; /* time event identifier. */
     long when_sec; /* seconds 事件到达的秒级时间戳*/
