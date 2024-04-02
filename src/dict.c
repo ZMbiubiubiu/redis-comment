@@ -238,7 +238,7 @@ long long timeInMilliseconds(void) {
     struct timeval tv;
 
     gettimeofday(&tv,NULL);
-    return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
+    return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000); // 得到ms数
 }
 
 /* Rehash for an amount of time between ms milliseconds and ms+1 milliseconds */
@@ -310,6 +310,7 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
      * Insert the element in top, with the assumption that in a database
      * system it is more likely that recently added entries are accessed
      * more frequently. */
+    // 如果处于rehash过程中，新增的键值对放到ht[1]中
     ht = dictIsRehashing(d) ? &d->ht[1] : &d->ht[0];
     entry = zmalloc(sizeof(*entry));
     entry->next = ht->table[index];
