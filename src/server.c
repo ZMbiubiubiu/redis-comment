@@ -4081,8 +4081,10 @@ void memtest(size_t megabytes, int passes);
 int checkForSentinelMode(int argc, char **argv) {
     int j;
 
+    //第一个判断条件，判断执行命令本身是否为redis-sentinel
     if (strstr(argv[0],"redis-sentinel") != NULL) return 1;
     for (j = 1; j < argc; j++)
+        //第二个判断条件，判断命令参数是否有"--sentienl"
         if (!strcmp(argv[j],"--sentinel")) return 1;
     return 0;
 }
