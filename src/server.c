@@ -4429,7 +4429,7 @@ int main(int argc, char **argv) {
     #endif /* __arm64__ */
     #endif /* __linux__ */
         moduleLoadFromQueue();
-        InitServerLast(); // 里面其实就已经开启了额外的三个线程，从这时起，redis就不是单线程啦
+        InitServerLast(); // 开启了额外的三个线程（tips:从这时起，redis就不是单线程啦）
         loadDataFromDisk(); // 从磁盘上加载 AOF 或者是 RDB 文件，以便恢复之前的数据
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {
@@ -4444,7 +4444,7 @@ int main(int argc, char **argv) {
         if (server.sofd > 0)
             serverLog(LL_NOTICE,"The server is now ready to accept connections at %s", server.unixsocket);
     } else {
-        InitServerLast(); // 同上
+        InitServerLast(); // 开启了额外的三个线程（tips:从这时起，redis就不是单线程啦）
         sentinelIsRunning();
     }
 
