@@ -381,7 +381,7 @@ static dictEntry *dictGenericDelete(dict *d, const void *key, int nofree) {
         he = d->ht[table].table[idx];
         prevHe = NULL;
         while(he) {
-            //如果找见被删除key了，那么将它从哈希桶的链表中去除
+            //如果找见被删除的key，那么将它从哈希桶的链表中去除
             if (key==he->key || dictCompareKeys(d, key, he->key)) {
                 /* Unlink the element from the list */
                 // 这里只是将键值对从bucket的链表中删除
