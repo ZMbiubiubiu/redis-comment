@@ -138,8 +138,8 @@ typedef struct instanceLink {
     int refcount;          /* Number of sentinelRedisInstance owners. */
     int disconnected;      /* Non-zero if we need to reconnect cc or pc. */
     int pending_commands;  /* Number of commands sent waiting for a reply. */
-    redisAsyncContext *cc; /* Hiredis context for commands. */
-    redisAsyncContext *pc; /* Hiredis context for Pub / Sub. */
+    redisAsyncContext *cc; /* Hiredis context for commands. //用于发送命令的连接 */
+    redisAsyncContext *pc; /* Hiredis context for Pub / Sub. //用于发送pub-sub消息的连接*/
     mstime_t cc_conn_time; /* cc connection time. */
     mstime_t pc_conn_time; /* pc connection time. */
     mstime_t pc_last_activity; /* Last time we received any message. */
@@ -3575,8 +3575,10 @@ void sentinelPublishCommand(client *c) {
 void sentinelCheckSubjectivelyDown(sentinelRedisInstance *ri) {
     mstime_t elapsed = 0;
 
+    //计算当前距离上一次发送PING命令的时长
     if (ri->link->act_ping_time)
         elapsed = mstime() - ri->link->act_ping_time;
+    //如果哨兵和主节点的连接断开了，那么计算当前距离连接最后可用的时长
     else if (ri->link->disconnected)
         elapsed = mstime() - ri->link->last_avail_time;
 
@@ -4410,10 +4412,13 @@ void sentinelAbortFailover(sentinelRedisInstance *ri) {
  * -------------------------------------------------------------------------- */
 
 /* Perform scheduled operations for the specified Redis instance. */
+//函数会被周期性执行，用来检测哨兵监听的节点的状态
 void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     /* ========== MONITORING HALF ============ */
     /* Every kind of instance */
+    // 重新建立连接
     sentinelReconnectInstance(ri);
+    // 发送PING INFO等命令
     sentinelSendPeriodicCommands(ri);
 
     /* ============== ACTING HALF ============= */
@@ -4427,6 +4432,7 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     }
 
     /* Every kind of instance */
+    // 判断是否主管下线
     sentinelCheckSubjectivelyDown(ri);
 
     /* Masters and slaves */
@@ -4436,8 +4442,11 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
 
     /* Only masters */
     if (ri->flags & SRI_MASTER) {
+        // 是否客观下线
         sentinelCheckObjectivelyDown(ri);
+        // 是否需要进行故障切换
         if (sentinelStartFailoverIfNeeded(ri))
+            // 发起leader选举
             sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_ASK_FORCED);
         sentinelFailoverStateMachine(ri);
         sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_NO_FLAGS);
@@ -4455,8 +4464,9 @@ void sentinelHandleDictOfRedisInstances(dict *instances) {
     di = dictGetIterator(instances);
     while((de = dictNext(di)) != NULL) {
         sentinelRedisInstance *ri = dictGetVal(de);
-
+        // 核心逻辑
         sentinelHandleRedisInstance(ri);
+        // 如果当前是主节点，那么调用sentinelHandleDictOfRedisInstances分别处理该主节点的从节点，以及监听该主节点的其他哨兵
         if (ri->flags & SRI_MASTER) {
             sentinelHandleDictOfRedisInstances(ri->slaves);
             sentinelHandleDictOfRedisInstances(ri->sentinels);
