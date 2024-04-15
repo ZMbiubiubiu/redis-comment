@@ -600,9 +600,10 @@ int equalStringObjects(robj *a, robj *b) {
 
 size_t stringObjectLen(robj *o) {
     serverAssertWithInfo(NULL,o,o->type == OBJ_STRING);
+    // 如果是sds普通字符串或者sds内嵌字符串
     if (sdsEncodedObject(o)) {
         return sdslen(o->ptr);
-    } else {
+    } else { // 否则没有sds的存在，redisObject的ptr存储的直接是值，比如double、long
         return sdigits10((long)o->ptr);
     }
 }
